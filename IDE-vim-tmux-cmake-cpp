@@ -1,0 +1,124 @@
+#!/bin/bash
+repo=repos_1
+sour=source
+dir=$(dirname $0)
+cd $dir
+dir=$(pwd | sed 's/\//\\\//g')
+creatCombileFlag()
+{
+    cp $sour/template/compile_flags.txt $sour/$repo/$1/ && echo "Flag done"
+}
+
+creatTmux()
+{
+    cp $sour/template/tmux.gdb.conf $sour/$repo/$1/.tmux.gdb.conf && echo "tmux gdb conf Done"
+    sed -i -e 's/IDE_NAME/'$1'_IDE/' -e 's/FILE_PATH/build\/debug\/'$1'/' "$sour/$repo/$1/.tmux.gdb.conf"
+}
+
+creatVimrc()
+{
+    cp $sour/template/vimrc $sour/$repo/$1/.vimrc && echo "vimrc Done"
+}
+
+creatExample()
+{
+    cp $sour/template/main.cpp $sour/$repo/$1/ && echo "vimrc Done"
+    sed -i 's/NAME_OF_PROJECT/'$1'/' "$sour/$repo/$1/main.cpp"
+}
+
+creatCmake()
+{
+    cp $sour/template/CMakeLists.txt $sour/$repo/$1/ && echo "CMakeLists Done"
+    compile_flags=$(cat $sour/template/compile_flags.txt | tr '\n' ' ')
+    sed -i -e "s/CMAKE_CXX_FLAGS_IDE_CONFIGURATION/$compile_flags/" -e 's/PROJECT_NAME_FOR_IDE_CONFIGURATION/'$1'/' -e "s/CMAKE_INSTALL_PREFIX_IDE_CONFIGURATION/$dir\/$sour\/$repo/" "$sour/$repo/$1/CMakeLists.txt"
+}
+
+openProjectForFirstTime()
+{
+    if [ -s CMakeLists.txt ];
+    then
+        cmake .
+        cmake --build .
+    else
+        echo "Cmake not found"
+        exit
+    fi
+    echo Openning................
+    if [ $(tmux has-session -t $1_IDE 2> /dev/null;echo $?) = 1 ];then
+        tmux new-session -d -s $1_IDE -n Editor -x "$(tput cols)" -y "$(tput lines)" "vim ." && tmux new-window -n GDB -t $1_IDE && tmux source ./.tmux.gdb.conf
+    else
+        tmux a -t $1_IDE:Editor
+    fi
+}
+
+openProject()
+{
+    if [ -s CMakeLists.txt ];
+    then
+        cmake .
+    else
+        echo "Cmake not found"
+        exit
+    fi
+    echo Openning................
+    if [ $(tmux has-session -t $1_IDE 2> /dev/null;echo $?) = 1 ];then
+        tmux new-session -d -s $1_IDE -n Editor -x "$(tput cols)" -y "$(tput lines)" "vim ." && tmux new-window -n GDB -t $1_IDE && tmux source ./.tmux.gdb.conf
+    else
+        tmux a -t $1_IDE:Editor
+    fi
+}
+
+case $1 in
+    "-o" | "-open" | "open")
+        if [ $2 ];then
+            if [ -d $sour/$repo/$2 ];then
+                cd $sour/$repo/$2
+                openProject $2
+            else
+                echo "$repo/$2 didn't found"
+            fi
+        fi
+        ;;
+    "new" | "-new" | "-n")
+        if [ $2 ];then
+            if [ -d $sour/$repo/$2 ];then
+                echo "file already exists"
+            else
+                mkdir -p $sour/$repo/$2
+                creatCmake $2
+                creatExample $2
+                creatVimrc $2
+                creatTmux $2
+                cd $sour/$repo/$2
+                openProjectForFirstTime $2
+            fi
+        fi
+        ;;
+    "list" | "-list" | "-l")
+        ls -t $sour/$repo/
+        ;;
+    "remove" | "-r")
+        if [ $2 ];then
+            if [ -d $sour/$repo/$2 ];then
+                echo -n "Removing $sour/$repo/$2....."
+                rm -rf $sour/$repo/$2
+                echo "......"
+            else
+                echo "$repo/$2 didn't found"
+            fi
+        fi
+        ;;
+    "reconfigure" | "-conf" | "-c")
+        if [ $2 ];then
+            if [ -d $sour/$repo/$2 ];then
+                creatCmake $2
+                creatVimrc $2
+                creatTmux $2
+                cd $sour/$repo/$2
+                openProjectForFirstTime $2
+            else
+                echo "$repo/$2 didn't found"
+            fi
+        fi
+
+esac

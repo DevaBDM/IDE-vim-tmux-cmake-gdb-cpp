@@ -1,0 +1,39 @@
+set makeprg=cmake\ .;cmake\ --build\ .
+let s:lastWrite=0
+let s:lastBuild=0
+let s:RunORNot=1
+let s:NotBuildMessage="Need to build"
+
+function! IsModified()
+    let s:RunORNot=1
+    if &modified
+        let s:RunORNot=0
+    elseif (s:lastBuild != s:lastWrite)
+        let s:RunORNot=0
+    endif
+endfunction
+
+function! Build()
+    if (&modified || s:lastBuild == 0 || s:lastWrite == 0 || s:lastWrite != s:lastBuild)
+        w
+        let s:lastBuild=s:lastWrite
+        Make
+    else
+        echo "No change since last build"
+    endif
+endfunction
+
+function! Run()
+    if s:RunORNot
+        silent !tmux split -p 20 "bash run.sh;read"
+    else
+        echo s:NotBuildMessage
+    endif
+endfunction
+
+map <SPACE>x :qa<cr>
+map <SPACE>xx :qa!<cr>
+map <SPACE>b :call Build()<cr>
+map <SPACE>r :call IsModified()<CR>:call Run()<CR>
+
+au BufWritePre * let s:lastWrite=strftime("%y%m%d%H%M%S")

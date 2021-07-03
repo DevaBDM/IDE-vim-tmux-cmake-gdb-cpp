@@ -1,0 +1,6 @@
+-std=c++17
+-pedantic-errors
+-Wall
+-Weffc++
+-Wextra
+-Wsign-conversion

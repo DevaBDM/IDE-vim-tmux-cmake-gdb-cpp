@@ -14,13 +14,9 @@ function! IsModified()
 endfunction
 
 function! Build()
-    if (&modified || s:lastBuild == 0 || s:lastWrite == 0 || s:lastWrite != s:lastBuild)
         w
         let s:lastBuild=s:lastWrite
         Make
-    else
-        echo "No change since last build"
-    endif
 endfunction
 
 function! Run()

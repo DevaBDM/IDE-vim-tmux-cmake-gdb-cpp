@@ -29,6 +29,8 @@ endfunction
 
 map <SPACE>x :qa<cr>
 map <SPACE>xx :qa!<cr>
+map <SPACE>e :copen<cr>
+map <SPACE>c :cclose<cr>
 map <SPACE>b :call Build()<cr>
 map <SPACE>r :call IsModified()<CR>:call Run()<CR>
 
